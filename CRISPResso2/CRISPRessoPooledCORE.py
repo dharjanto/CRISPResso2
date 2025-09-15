@@ -164,9 +164,17 @@ def get_ref_length_from_cigar(cigar_string):
     return result
 
 def get_n_reads_fastq(fastq_filename):
-     p = sb.Popen(('z' if fastq_filename.endswith('.gz') else '' ) +"cat < %s | wc -l" % fastq_filename, shell=True, stdout=sb.PIPE)
-     n_reads = int(float(p.communicate()[0])/4.0)
-     return n_reads
+     line_count = 0
+     if fastq_filename.endswith('.gz'):
+         fh = gzip.open(fastq_filename, 'rt')
+     else:
+         fh = open(fastq_filename, 'r')
+     try:
+         for _ in fh:
+             line_count += 1
+     finally:
+         fh.close()
+     return int(line_count/4.0)
 
 def get_n_reads_bam(bam_filename):
     p = sb.Popen("samtools view -c %s" % bam_filename, shell=True, stdout=sb.PIPE)
