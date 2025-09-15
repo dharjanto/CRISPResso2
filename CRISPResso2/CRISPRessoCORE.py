@@ -96,14 +96,40 @@ def check_program(binary_name,download_url=None):
 
 
 def get_avg_read_length_fastq(fastq_filename):
-     cmd=('z' if fastq_filename.endswith('.gz') else '' ) +('cat < \"%s\"' % fastq_filename)+\
-                  r''' | awk 'BN {n=0;s=0;} NR%4 == 2 {s+=length($0);n++;} END { printf("%d\n",s/n)}' '''
-     p = sb.Popen(cmd, shell=True, stdout=sb.PIPE)
-     return int(p.communicate()[0].strip())
+     total_bases = 0
+     total_reads = 0
+     if fastq_filename.endswith('.gz'):
+         fh = gzip.open(fastq_filename, 'rt')
+     else:
+         fh = open(fastq_filename, 'r')
+     try:
+         while True:
+             id_line = fh.readline()
+             if not id_line:
+                 break
+             seq_line = fh.readline()
+             plus_line = fh.readline()
+             qual_line = fh.readline()
+             if not qual_line:
+                 break
+             total_bases += len(seq_line.strip())
+             total_reads += 1
+     finally:
+         fh.close()
+     return int(total_bases/total_reads) if total_reads > 0 else 0
 
 def get_n_reads_fastq(fastq_filename):
-    p = sb.Popen(('z' if fastq_filename.endswith('.gz') else '' ) +"cat < \"%s\" | wc -l" % fastq_filename, shell=True, stdout=sb.PIPE)
-    return int(float(p.communicate()[0])/4.0)
+    line_count = 0
+    if fastq_filename.endswith('.gz'):
+        fh = gzip.open(fastq_filename, 'rt')
+    else:
+        fh = open(fastq_filename, 'r')
+    try:
+        for _ in fh:
+            line_count += 1
+    finally:
+        fh.close()
+    return int(line_count/4.0)
 
 def get_n_reads_bam(bam_filename,bam_chr_loc=""):
     cmd = "samtools view -c " + bam_filename + " " + bam_chr_loc

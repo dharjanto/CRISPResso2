@@ -6,7 +6,7 @@ Software pipeline for the analysis of genome editing outcomes from deep sequenci
 
 import os
 import sys
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 import shutil
 import pandas as pd
 import re
@@ -129,16 +129,18 @@ def make_report(run_data, crispresso_report_file, crispresso_folder, _ROOT):
         'crispresso_data_path': crispresso_data_path,
     }
 
-    j2_env = Environment(loader=FileSystemLoader(os.path.join(_ROOT, 'templates')))
+    j2_env = Environment(
+        loader=FileSystemLoader(os.path.join(_ROOT, 'templates')),
+        autoescape=select_autoescape(['html', 'xml'])
+    )
     template = j2_env.get_template('report.html')
 
 #    dest_dir = os.path.dirname(crispresso_report_file)
 #    shutil.copy2(os.path.join(_ROOT,'templates','CRISPResso_justcup.png'),dest_dir)
 #    shutil.copy2(os.path.join(_ROOT,'templates','favicon.ico'),dest_dir)
 
-    outfile = open(crispresso_report_file, 'w')
-    outfile.write(template.render(report_data=report_data))
-    outfile.close()
+    with open(crispresso_report_file, 'w') as outfile:
+        outfile.write(template.render(report_data=report_data))
 
 def make_batch_report_from_folder(crispressoBatch_report_file, crispresso2_info, batch_folder, _ROOT):
     batch_names = crispresso2_info['results']['completed_batch_arr']
@@ -328,7 +330,10 @@ def make_multi_report(run_names,sub_html_files,crispresso_multi_report_file,cris
 
         def dirname(path):
             return os.path.basename(os.path.dirname(path))
-        j2_env = Environment(loader=FileSystemLoader(os.path.join(_ROOT, 'templates')))
+        j2_env = Environment(
+            loader=FileSystemLoader(os.path.join(_ROOT, 'templates')),
+            autoescape=select_autoescape(['html', 'xml'])
+        )
         j2_env.filters['dirname'] = dirname
         template = j2_env.get_template('multiReport.html')
 
@@ -338,12 +343,11 @@ def make_multi_report(run_names,sub_html_files,crispresso_multi_report_file,cris
         else:
             crispresso_data_path += "/";
 
-        outfile = open(crispresso_multi_report_file, 'w')
-        outfile.write(template.render(window_nuc_pct_quilts=window_nuc_pct_quilts, nuc_pct_quilts=nuc_pct_quilts,
-            window_nuc_conv_plots=window_nuc_conv_plots, nuc_conv_plots=nuc_conv_plots, crispresso_data_path=crispresso_data_path,
-            summary_plot_names=summary_plot_names, summary_plot_titles=summary_plot_titles, summary_plot_labels=summary_plot_labels, summary_plot_datas=summary_plot_datas,
-            run_names=run_names, sub_html_files=sub_html_files, report_name=report_name))
-        outfile.close()
+        with open(crispresso_multi_report_file, 'w') as outfile:
+            outfile.write(template.render(window_nuc_pct_quilts=window_nuc_pct_quilts, nuc_pct_quilts=nuc_pct_quilts,
+                window_nuc_conv_plots=window_nuc_conv_plots, nuc_conv_plots=nuc_conv_plots, crispresso_data_path=crispresso_data_path,
+                summary_plot_names=summary_plot_names, summary_plot_titles=summary_plot_titles, summary_plot_labels=summary_plot_labels, summary_plot_datas=summary_plot_datas,
+                run_names=run_names, sub_html_files=sub_html_files, report_name=report_name))
 
 def make_aggregate_report(crispresso2_info,report_name,crispresso_report_file,crispresso_report_folder,_ROOT,folder_arr,crispresso_html_reports,display_names=None):
     """

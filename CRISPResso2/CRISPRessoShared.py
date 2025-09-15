@@ -5,6 +5,7 @@ Software pipeline for the analysis of genome editing outcomes from deep sequenci
 '''
 
 import argparse
+import ast
 import datetime
 import errno
 import gzip
@@ -487,7 +488,14 @@ class CRISPRessoJSONDecoder(json.JSONDecoder):
                     microseconds=obj['value']['microseconds'],
                 )
             if obj['_type'] == 'set':
-                return eval(obj['value'])
+                # Safely parse set representation; handle empty set specially
+                try:
+                    if obj['value'] == 'set()':
+                        return set()
+                    # literal_eval supports set display like "{1, 2}"; wrap in set() for robustness
+                    return set(ast.literal_eval(obj['value']))
+                except Exception as e:
+                    raise ValueError('Failed to safely decode set literal: ' + str(e))
             if obj['_type'] == 'range':
                 start, end, step = re.match(
                     r'range\((\d+), (\d+)(?:, (\d+))?\)', obj['value'],
